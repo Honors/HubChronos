@@ -11,12 +11,13 @@ Example
 Usage
 -----
 ###Credentials
-Create a `creds.json` file containing your username and password as JSON. The following is an example.
+Create a `creds.json` file containing your username, password, and any organizations of which you are a member as JSON. The following is an example.
 
 ```json
 {
 	"username": "XXX",
-	"password": "XXX"
+	"password": "XXX",
+	"organizations": ["XXX", "XXX"]
 }
 ```
 

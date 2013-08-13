@@ -139,7 +139,8 @@ var dumpCommits = function(username, password, orgs, accum) {
 // Read in Credits
 var creds = JSON.parse(fs.readFileSync(__dirname + '/creds.json')),
 	username = creds.username,
-	password = creds.password;	
+	password = creds.password,
+	organizations = creds.organizations;
 
 http.createServer(function(req, res) {
 	if( req.url == '/dump' ) {
@@ -148,7 +149,7 @@ http.createServer(function(req, res) {
 		fs.createReadStream(__dirname + '/dump.json').pipe(res);
 	} else if( req.url == '/fetch' ) {
 		// Fetch New Data and Dump
-		dumpCommits(username, password, ['lambdalabs', 'linguae']);
+		dumpCommits(username, password, organizations);
 		res.end("Fetching Commits.");
 	} else {
 		// Render the Example Page
