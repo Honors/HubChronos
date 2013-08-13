@@ -1,0 +1,161 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<title>Github Summer</title>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.js"></script>
+	</head>
+	<body>
+		<div id="content">
+			<h1>My Summer on Github</h1>
+			<canvas id="timeline" width="600" height="400"></canvas>
+			<canvas id="legend" width="600" height="400"></canvas>
+		</div>
+		<script>
+			// Functional Prelude
+			var attr = function(k) {
+				return function(item) {
+					return item[k];
+				};
+			};
+			var toAssoc = function(obj) {
+				return Object.keys(obj).map(function(k) {
+					return [k,obj[k]];
+				});
+			};
+			var fromAssoc = function(arr) {
+				var obj = {}; 
+				arr.map(function(b){
+					obj[b[0]] = b[1];
+				}); 
+				return obj;
+			};
+		
+			// Color Provisioning
+			var h = 0;
+			var randomColor = function() {
+				// Opted for sequence over random
+				h += 12;
+				return 'hsl('+h+', 50%, 50%)'
+			};			
+			
+			// Rendering of Commit Data
+			var renderDivision = function(ctx, canvas, offset, dx) {
+				ctx.beginPath();
+				ctx.strokeStyle = 'black';
+				ctx.strokeWidth = '3px';
+				ctx.moveTo(offset, 0);
+				ctx.lineTo(offset, canvas.height);
+				ctx.stroke();						
+				ctx.closePath();
+			};
+			
+			var rect = function(cvs, ctx, x, y, w, h) {
+				ctx.rect(x, cvs.height - y, w, -h);
+			};
+			
+			var render = function(repo_sets, canvas) {
+				// Decide `dx` based on number of days.
+				var offset = 0,
+					days = repo_sets.reduce(function(a,b) {
+						return {length:a.length+b.length};
+					}).length,
+					dx = canvas.width / days;
+				var colors = {},
+					ctx = canvas.getContext('2d');
+				repo_sets.forEach(function(repo_days) {
+					if(offset != 0) {
+						// Don't render a division occurring at the border
+						renderDivision(ctx, canvas, offset);
+					}
+					
+					// Reduce Commit-Days to a Day Hash.
+					var days = {};
+					repo_days.forEach(function(repo_day) {
+						var offsetCount = Math.round(offset/dx);
+						days[repo_day.day+offsetCount] = days[repo_day.day+offsetCount] || [];
+						days[repo_day.day+offsetCount].push({
+							repo: repo_day.repo,
+							commits: repo_day.commits
+						});
+					});
+					
+					// Decide `dy` based on maximum commits.
+					var yMax = Math.max.apply({}, toAssoc(days).map(attr(1)).map(function(day) {
+						return day.reduce(function(a, b) {
+							return {commits:a.commits + b.commits};
+						}).commits;	
+					}));
+					var dy = canvas.height/yMax;
+					
+					// Render each day as a stacked bar.
+					toAssoc(days).forEach(function(day) {
+						var key = day[0];
+						var heights = {};
+						day[1].forEach(function(repo_commit) {
+							// Maintain Running Colors Repos, and
+							// Staring Heights for Days
+							var color = colors[repo_commit.repo] || randomColor();
+							colors[repo_commit.repo] = color;
+							var height = heights[repo_commit.day] || 0;
+							heights[repo_commit.day] = height;
+							
+							// Render a Top Stack on the Bar
+							ctx.beginPath();
+							rect(canvas, ctx, key*dx+1, height, dx - 2, repo_commit.commits*dy - 2);
+							heights[repo_commit.repo] += repo_commit.commits*dy;		
+							ctx.fillStyle = color;				
+							ctx.fill();
+							ctx.closePath();
+						});						
+					});
+					offset = (31 + offset/dx)*dx;
+				});
+				
+				var legend = $("#legend").get()[0].getContext('2d');
+				toAssoc(colors).map(function(pair, index) {
+					legend.beginPath();
+					legend.rect(40+(index%3)*200, Math.floor((index)/3+1)*40, 20, 20);
+					console.log(pair[0]);
+					legend.fillStyle = pair[1];
+					legend.fillText(pair[0], 40+(index%3)*200, Math.floor((index)/3+1)*40-7)
+					legend.fill();
+					legend.closePath();
+				});
+			};
+					
+			// Fetch the Dumped Commit Data		
+			$.get("/dump", function(repos) {
+				var months = {1:[],2:[],3:[],4:[],5:[],6:[],7:[],8:[],9:[],10:[],11:[],12:[]};
+				repos.map(function(repo) {		
+					// Group Commit-Days by Month
+					toAssoc(repo.commit_days).filter(function(day) {
+						return day[0].split('/')[2] == 2013;
+					}).map(function(day) {
+						months[day[0].split('/')[0]].push({
+							day: parseInt(day[0].split('/')[1]),
+							commits: day[1],
+							repo: repo.repo
+						});
+					});
+				});
+				// Render Consecutive Months
+				render([months[6], months[7], months[8]], $("#timeline").get(0));
+			});
+		</script>
+		<style>
+			#content {
+				width: 600px;				
+				position: absolute;
+				left: 50%;
+				margin-left: -300px;
+				}
+				#content h1 {
+					font-family: 'Helvetica Neue', Helvetica, sans-serif;
+					text-align: center;
+				}
+			#timeline {
+				border: 1px solid #333;
+			}				
+		</style>
+	</body>
+</html>
