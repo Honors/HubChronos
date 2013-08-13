@@ -1,6 +1,6 @@
-Github Timeline
-===============
-Github Timeline aims to build upon the Github profile, rendering a color-coded bar graph of commits. A legend is then presented beneath the graph labeling colors as repositories to which you have contributed.
+HubChronos
+==========
+HubChronos aims to build upon the Github profile, rendering a color-coded bar graph of commits in timeline form. A legend is then presented beneath the graph labeling colors as repositories to which you have contributed.
 
 This is most useful for considering when, and for how long, you worked on each of your projects. The raw commit data is also exposed to allow you to make your own interesting manipulations on the client-side.
 
